@@ -2,41 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\Helper;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class LocationController extends Controller
 {
-
-    /**
-     * @var string
-     */
-    public string $layout = 'layouts.default';
-
     /**
      * Display a listing of the resource.
      *
-     * @return Application|Factory|View|RedirectResponse
+     * @return \Illuminate\Http\Response
      */
-    public function index(): Application|Factory|View|RedirectResponse
+    public function index()
     {
-        if(is_null(session('user:token')) && Helper::instance()->getPageAccessByModule('location_show'))
-        {
-            return $this->getSignInRouteByRole();
-        }
-
-        return view($this->layout)->nest('content', 'location.index', []);
+        //
     }
 
     /**
      * Show the form for creating a new resource.
      *
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function create()
     {
@@ -47,7 +30,7 @@ class LocationController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
@@ -58,7 +41,7 @@ class LocationController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function show($id)
     {
@@ -69,7 +52,7 @@ class LocationController extends Controller
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function edit($id)
     {
@@ -81,7 +64,7 @@ class LocationController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
     {
@@ -92,7 +75,7 @@ class LocationController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return Response
+     * @return \Illuminate\Http\Response
      */
     public function destroy($id)
     {

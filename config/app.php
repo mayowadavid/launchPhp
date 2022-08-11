@@ -56,8 +56,6 @@ return [
 
     'asset_url' => env('ASSET_URL', null),
 
-    'global_api_url' => env('GLOBAL_URI', null),
-
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -233,7 +231,7 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
         'Google2FA' => PragmaRX\Google2FALaravel\Facade::class,
-        'Helper' => App\Helpers\Helper::class
+
     ],
 
 ];

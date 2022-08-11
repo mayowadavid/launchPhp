@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\Helper;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redirect;
@@ -25,16 +23,26 @@ class DashboardController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param Request $request
      * @return Application|Factory|View|RedirectResponse
      */
-    public function index(): Application|Factory|View|RedirectResponse
+    public function index(Request $request): Application|Factory|View|RedirectResponse
     {
-        if(is_null(session('user:token')) && Helper::instance()->getPageAccessByModule('dashboard_statics'))
+        if(is_null(session('user:token')))
         {
-            return $this->getSignInRouteByRole();
+            $this->getSignInRouteByRole();
         }
 
-        return $this->getDashboardRouteByRole();
+        $response = Http::withToken(Crypt::decrypt(session('user:token')))->get(env('GLOBAL_URI') . 'user/show', [
+            'type' => 'single',
+            'id' => Crypt::decrypt(session('user:id')),
+            'user_types' => [1],
+            'organisation' => Crypt::decrypt(session('user:organisation')),
+            'authenticatie' => Crypt::decrypt(session('user:email')),
+        ]);
+        $user = $response->json('result.message');
+
+        return view($this->layout)->nest('content', 'dashboard.index', ['user' => $user]);
     }
 
     /**
@@ -103,53 +111,26 @@ class DashboardController extends Controller
         //
     }
 
-    /**
-     * @return Application|Factory|View
-     */
-    protected function getDashboardRouteByRole(): View|Factory|Application
+    protected function getSignInRouteByRole()
     {
-        $token = Crypt::decrypt(session('user:token'));
-        $user = Cache::remember("dashboardUser{$token}", 60 * 5, function() use ($token) {
-            $response = Http::withToken(Crypt::decrypt(session('user:token')))->get(config('app.global_api_url') . 'user/show', [
-                'type' => 'single',
-                'id' => Crypt::decrypt(session('user:id')),
-                'user_types' => [1,2,3],
-                'organisation' => Crypt::decrypt(session('user:organisation')),
-                'authenticatie' => Crypt::decrypt(session('user:email')),
-            ]);
-            return $response->json('result.message');
-        });
+        $response = Http::withToken(Crypt::decrypt(session('user:token')))->get(env('GLOBAL_URI') . 'user/show', [
+            'type' => 'single',
+            'id' => Crypt::decrypt(session('user:id')),
+            'user_types' => [1],
+            'organisation' => Crypt::decrypt(session('user:organisation')),
+            'authenticatie' => Crypt::decrypt(session('user:email')),
+        ]);
+        $user = $response->json('result.message');
 
         switch($user['role_id'])
         {
             case 1:
-                $statics = $this->getStatics('admin');
-                return view($this->layout)->nest('content', 'dashboard.admin.index', ['user' => $user, 'statics' => $statics]);
+                return Redirect::route('auth.authentication.signing');
             case 2:
-                $statics = $this->getStatics('manager');
-                return view($this->layout)->nest('content', 'dashboard.manager.index', ['user' => $user, 'statics' => $statics]);
             case 3:
-                $statics = $this->getStatics('employee');
-                return view($this->layout)->nest('content', 'dashboard.employee.index', ['user' => $user, 'statics' => $statics]);
+                return Redirect::route('auth.signing');
             default:
                 abort(401);
         }
-    }
-
-    /**
-     * @param string $type
-     * @return array|mixed
-     */
-    protected function getStatics(string $type): mixed
-    {
-        $token = Crypt::decrypt(session('user:token'));
-        return Cache::remember("dashboardStatics{$token}", 60 * 5, function() use ($token, $type) {
-            $response = Http::withToken(Crypt::decrypt(session('user:token')))->get(config('app.global_api_url') . 'dashboard/statics', [
-                'type' => $type,
-                'organisation_id' => Crypt::decrypt(session('user:organisation')),
-                'authenticatie' => Crypt::decrypt(session('user:email')),
-            ]);
-            return $response->json('result.message');
-        });
     }
 }

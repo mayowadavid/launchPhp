@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\Helper;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -40,7 +39,7 @@ class UserController extends Controller
     public function index(): View|Factory|Application
     {
         // @todo Fix token by user authentication
-        $response = Http::withToken('')->get(config('app.global_api_url') . 'user/show', [
+        $response = Http::withToken('v4.local.BykBz5aKAWUDFZMLru3BoqciXLQ_gTG3TXzrfzjlIvBphA3ho6Tb2rrZiR7WA50yD55fpMn-xcoW0O3yDU4GGzGAE5ki4WZjZp5XbY8KDkjrl5CcqGHXgTSVpvc7FvenT69FJFMZJv-3jn5jXmeOW5A-iiG8dj9Ilsxf7NQtfcXcZTmoRqUZVKbHaNouHoFPTnAUe-dJ1dQJnkJTYye5MBS1UQLVxmUvzPoNGJahWynjBU0JHCEP787qCZLZxjMNoRudj4QX5IaBLA1Pmlz3pLWl8qB5-jUIRubAJZTcENlGrIS3dH_b3GvsgycOmXOoXU5B-pSokrUMUetEtWVOejmohJeb2mDX1eVpJVW-zl95jlas2D1aMPH6WUrLcpUKvKxE_rElJm0dzcXbtESfT87ZJwWCWC1NrOe7ILUM8t8yNZst3Ks')->get(env('GLOBAL_URI') . 'user/show', [
             'type' => 'all',
             'user_types' => [3],
             'organisation' => 123456,
@@ -120,19 +119,6 @@ class UserController extends Controller
     }
 
     /**
-     * @return View|Factory|RedirectResponse|Application
-     */
-    public function settings(): View|Factory|RedirectResponse|Application
-    {
-        if(is_null(session('user:token')))
-        {
-            return $this->getSignInRouteByRole();
-        }
-
-        return $this->getSettingsRouteByRole();
-    }
-
-    /**
      * @param string $email
      * @param int $organisation
      * @param string $middleware
@@ -142,7 +128,7 @@ class UserController extends Controller
      */
     public function getToken(string $email, int $organisation, string $middleware, string $version, string $token): mixed
     {
-        $response = Http::get(config('app.global_api_url') . 'token', [
+        $response = Http::get(env('GLOBAL_URI') . 'token', [
             'mail' => $email,
             'organisation' => $organisation,
             'middleware' => $middleware,
@@ -164,7 +150,7 @@ class UserController extends Controller
      */
     public function verifyToken(string $type, string $email, string $token = null): mixed
     {
-        $response = Http::get(config('app.global_api_url') . 'verify', [
+        $response = Http::get(env('GLOBAL_URI') . 'verify', [
             'type' => $type,
             'email' => $email,
             'token' => $token,
@@ -183,12 +169,16 @@ class UserController extends Controller
      */
     public function register(Request $request): Factory|View|Application
     {
+//        if(!$request->hasValidSignature()) {
+//            abort(401);
+//        }
+
         $google2fa = app(Google2FA::class);
 
         $secret = $google2fa->generateSecretKey();
         $g2faUrl = $google2fa->getQRCodeUrl(
             'EDUos Web',
-            $request->mail,
+            'mail@joshualonden.com',
             $secret
         );
 
@@ -199,10 +189,10 @@ class UserController extends Controller
             )
         );
 
-        $this->verifyToken('authentication', $request->mail, $secret);
+        $this->verifyToken('authentication', 'mail@joshualonden.com', $secret);
 
         $qrcode_image = base64_encode($writer->writeString($g2faUrl));
-        return view('auth.register.admin.index', ['qrcode' => $qrcode_image, 'secret' => $secret]);
+        return view($this->layout)->nest('content', 'auth.register.index', ['qrcode' => $qrcode_image, 'secret' => $secret]);
     }
 
     /**
@@ -228,8 +218,7 @@ class UserController extends Controller
             $request->session()->put('user:email', Crypt::encrypt($verify['email']));
             $request->session()->put('user:token', Crypt::encrypt($token));
             $request->session()->put('user:id', Crypt::encrypt($verify['id']));
-            $request->session()->put('user:role', Crypt::encrypt($verify['role_id']));
-            return Redirect::route('dashboard.index');
+            return Redirect::route('admin.dashboard.index');
         }
 
         return back()->withErrors([
@@ -237,39 +226,8 @@ class UserController extends Controller
         ]);
     }
 
-    /**
-     * @return Application|Factory|View|RedirectResponse
-     */
-    public function signing(): Application|Factory|View|RedirectResponse
+    public function signing(): Factory|View|Application
     {
-        if(session('user:token'))
-        {
-            return Redirect::route('dashboard.index');
-        }
-        return view('auth.signing.admin.index', []);
-    }
-
-    protected function getSettingsRouteByRole()
-    {
-        $response = Http::withToken(Crypt::decrypt(session('user:token')))->get(config('app.global_api_url') . 'user/show', [
-            'type' => 'single',
-            'id' => Crypt::decrypt(session('user:id')),
-            'user_types' => [1,2,3],
-            'organisation' => Crypt::decrypt(session('user:organisation')),
-            'authenticatie' => Crypt::decrypt(session('user:email')),
-        ]);
-        $user = $response->json('result.message');
-
-        switch($user['role_id'])
-        {
-            case 1:
-                return view($this->layout)->nest('content', 'settings.admin.index', ['user' => $user]);
-            case 2:
-                return view($this->layout)->nest('content', 'settings.manager.manager', ['user' => $user]);
-            case 3:
-                return view($this->layout)->nest('content', 'settings.employee.index', ['user' => $user]);
-            default:
-                abort(401);
-        }
+        return view($this->layout)->nest('content', 'auth.signing.index', []);
     }
 }

@@ -49,9 +49,6 @@
     box-sizing: border-box;
     transition: 0.1s;
 }
-.mainSearchBox tags.tagify {
-    width: 100%;
-}
 @keyframes tags--bump {
     30% {
         transform: scale(1.2);
