@@ -3,10 +3,10 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\LessonController;
-use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\OrganisationController;
 use App\Http\Controllers\SchedulerController;
+use App\Http\Controllers\SignInController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -31,14 +31,12 @@ use Symfony\Component\HttpFoundation\Request;
 Route::group(['prefix'=>'auth', 'middleware' => ['web','2fa']], function() {
 
     // Normal SignIn page
-    Route::controller(UserController::class)->group(function(){
-        Route::get('/signing', 'signing')->name('auth.signing');
-    });
+    Route::get('/signing', 'signing')->name('auth.signing');
 
     // Google Authentication
     Route::controller(UserController::class)->prefix('authentication')->group(function(){
 
-        Route::get('/register/{mail}', 'register')->name('auth.authentication.register');
+        Route::get('/register', 'register')->name('auth.authentication.register');
         Route::get('/signing', 'signing')->name('auth.authentication.signing');
 
         Route::post('/verify', 'verify')->name('auth.authentication.verify');
@@ -107,60 +105,49 @@ Route::group(['prefix'=>'auth', 'middleware' => ['web','2fa']], function() {
 
 });
 
-// Dashboard general
-Route::controller(DashboardController::class)->prefix('dashboard')->group(function(){
-
-    Route::get('/', 'index')->name('dashboard.index');
-
-});
-
-Route::controller(SchedulerController::class)->prefix('scheduler')->group(function(){
-
-    Route::get('/', 'index')->name('scheduler.index');
-
-    Route::post('store', 'store')->name('scheduler.store');
-
-    Route::get('delete/{id}', 'destroy')->name('scheduler.delete');
-
-});
-
-Route::controller(UserController::class)->prefix('settings')->group(function(){
-
-    Route::get('/', 'settings')->name('settings.index');
-
-    Route::put('edit/{id}', 'edit')->name('settings.store');
-
-    Route::get('delete/{id}', 'destroy')->name('settings.delete');
-
-});
-
 // Admin
 Route::group(['prefix'=>'admin'], function() {
+
+    // Dashboard
+    Route::controller(DashboardController::class)->prefix('dashboard')->group(function(){
+
+        Route::get('/', 'index')->name('admin.dashboard.index');
+
+    });
+
+    // Scheduler
+    Route::controller(SchedulerController::class)->prefix('scheduler')->group(function(){
+
+        Route::get('/', 'index')->name('admin.scheduler.index');
+
+        Route::post('store', 'store')->name('admin.scheduler.store');
+
+        Route::delete('delete/{id}', 'destroy')->name('admin.scheduler.delete');
+
+    });
 
     // Organisation
     Route::controller(OrganisationController::class)->prefix('organisation')->group(function(){
 
         Route::get('/', 'index')->name('admin.organisation.index');
-        Route::get('/{id}', 'show')->name('admin.organisation.show');
+        Route::get('show', 'show')->name('admin.organisation.show');
         Route::get('create', 'create')->name('admin.organisation.create');
-
-        Route::put('edit/{id}', 'edit')->name('admin.organisation.edit');
+        Route::get('edit', 'edit')->name('admin.organisation.edit');
 
         Route::post('store', 'store')->name('admin.organisation.store');
 
-        Route::get('delete/{id}', 'destroy')->name('admin.organisation.delete');
+        Route::delete('delete/{id}', 'destroy')->name('admin.organisation.delete');
 
     });
 
-    // License
-    Route::controller(LicenseController::class)->prefix('license')->group(function(){
+    // Settings
+    Route::controller(UserController::class)->prefix('settings')->group(function(){
 
-        Route::get('/', 'index')->name('admin.license.index');
-        Route::get('/{id}', 'show')->name('admin.license.show');
+        Route::get('/', 'index')->name('admin.settings.index');
 
-        Route::post('store', 'store')->name('admin.license.store');
+        Route::post('store', 'store')->name('admin.settings.store');
 
-        Route::get('delete/{id}', 'destroy')->name('admin.license.delete');
+        Route::delete('delete/{id}', 'destroy')->name('admin.settings.delete');
 
     });
 
@@ -169,25 +156,35 @@ Route::group(['prefix'=>'admin'], function() {
 // Manager
 Route::group(['prefix'=>'manager'], function() {
 
-    Route::controller(OrganisationController::class)->prefix('organisation')->group(function() {
+    // Dashboard
+    Route::controller(DashboardController::class)->prefix('dashboard')->group(function(){
 
-        Route::get('/', 'organisationSettings')->name('manager.settings.organisation');
+        Route::get('/', 'index')->name('manager.dashboard.index');
 
-        Route::get('/{id}', 'organisationSettingsEdit')->name('manager.settings.organisation.edit');
+    });
+
+    // Scheduler
+    Route::controller(SchedulerController::class)->prefix('scheduler')->group(function(){
+
+        Route::get('/', 'index')->name('manager.scheduler.index');
+
+        Route::post('store', 'store')->name('manager.scheduler.store');
+
+        Route::delete('delete/{id}', 'destroy')->name('manager.scheduler.delete');
+
     });
 
     // Location
     Route::controller(LocationController::class)->prefix('location')->group(function(){
 
         Route::get('/', 'index')->name('manager.location.index');
-        Route::get('/{id}', 'show')->name('manager.location.show');
+        Route::get('show', 'show')->name('manager.location.show');
         Route::get('create', 'create')->name('manager.location.create');
-
-        Route::put('/{id}', 'edit')->name('manager.location.edit');
+        Route::get('edit', 'edit')->name('manager.location.edit');
 
         Route::post('store', 'store')->name('manager.location.store');
 
-        Route::get('delete/{id}', 'destroy')->name('manager.location.delete');
+        Route::delete('delete/{id}', 'destroy')->name('manager.location.delete');
 
     });
 
@@ -195,14 +192,13 @@ Route::group(['prefix'=>'manager'], function() {
     Route::controller(UserController::class)->prefix('users')->group(function(){
 
         Route::get('/', 'index')->name('manager.users.index');
-        Route::get('/{id}', 'show')->name('manager.users.show');
+        Route::get('show', 'show')->name('manager.users.show');
         Route::get('create', 'create')->name('manager.users.create');
-
-        Route::put('/{id}', 'edit')->name('manager.users.edit');
+        Route::get('edit', 'edit')->name('manager.users.edit');
 
         Route::post('store', 'store')->name('manager.users.store');
 
-        Route::get('delete/{id}', 'destroy')->name('manager.users.delete');
+        Route::delete('delete/{id}', 'destroy')->name('manager.users.delete');
 
     });
 
@@ -210,14 +206,13 @@ Route::group(['prefix'=>'manager'], function() {
     Route::controller(GroupController::class)->prefix('group')->group(function(){
 
         Route::get('/', 'index')->name('manager.group.index');
-        Route::get('/{id}', 'show')->name('manager.group.show');
+        Route::get('show', 'show')->name('manager.group.show');
         Route::get('create', 'create')->name('manager.group.create');
-
-        Route::put('/{id}', 'edit')->name('manager.group.edit');
+        Route::get('edit', 'edit')->name('manager.group.edit');
 
         Route::post('store', 'store')->name('manager.group.store');
 
-        Route::get('delete/{id}', 'destroy')->name('manager.group.delete');
+        Route::delete('delete/{id}', 'destroy')->name('manager.group.delete');
 
     });
 
@@ -225,14 +220,13 @@ Route::group(['prefix'=>'manager'], function() {
     Route::controller(LessonController::class)->prefix('lesson')->group(function(){
 
         Route::get('/', 'index')->name('manager.lesson.index');
-        Route::get('/{id}', 'show')->name('manager.lesson.show');
+        Route::get('show', 'show')->name('manager.lesson.show');
         Route::get('create', 'create')->name('manager.lesson.create');
-
-        Route::put('/{id}', 'edit')->name('manager.lesson.edit');
+        Route::get('edit', 'edit')->name('manager.lesson.edit');
 
         Route::post('store', 'store')->name('manager.lesson.store');
 
-        Route::get('delete/{id}', 'destroy')->name('manager.lesson.delete');
+        Route::delete('delete/{id}', 'destroy')->name('manager.lesson.delete');
 
     });
 
@@ -240,14 +234,58 @@ Route::group(['prefix'=>'manager'], function() {
     Route::controller(TaskController::class)->prefix('task')->group(function(){
 
         Route::get('/', 'index')->name('manager.task.index');
-        Route::get('/{id}', 'show')->name('manager.task.show');
+        Route::get('show', 'show')->name('manager.task.show');
         Route::get('create', 'create')->name('manager.task.create');
-
-        Route::put('/{id}', 'edit')->name('manager.task.edit');
+        Route::get('edit', 'edit')->name('manager.task.edit');
 
         Route::post('store', 'store')->name('manager.task.store');
 
-        Route::get('delete/{id}', 'destroy')->name('manager.task.delete');
+        Route::delete('delete/{id}', 'destroy')->name('manager.task.delete');
+
+    });
+
+    // Settings
+    Route::controller(UserController::class)->prefix('settings')->group(function(){
+
+        Route::get('/', 'index')->name('manager.settings.index');
+
+        Route::post('store', 'store')->name('manager.settings.store');
+
+        Route::delete('delete/{id}', 'destroy')->name('manager.settings.delete');
+
+    });
+
+});
+
+// Employee
+Route::group(['prefix'=>'employee'], function() {
+
+    // Dashboard
+    Route::controller(DashboardController::class)->prefix('dashboard')->group(function(){
+
+        Route::get('/', 'employee.dashboard.index')->name('index');
+
+    });
+
+    // Scheduler
+    Route::controller(SchedulerController::class)->prefix('scheduler')->group(function(){
+
+        Route::get('/', 'index')->name('employee.scheduler.index');
+
+        Route::post('store', 'store')->name('employee.scheduler.store');
+
+        Route::delete('delete/{id}', 'destroy')->name('employee.scheduler.delete');
+
+    });
+
+    // Settings
+    Route::controller(UserController::class)->prefix('settings')->group(function(){
+
+        Route::get('/', 'index')->name('employee.settings.index');
+
+        Route::post('store', 'store')->name('employee.settings.store');
+
+        Route::delete('delete/{id}', 'destroy')->name('employee.settings.delete');
 
     });
 
